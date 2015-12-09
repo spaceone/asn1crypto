@@ -91,7 +91,7 @@ class DNSName(IA5String):
         """
 
         if not isinstance(other, DNSName):
-            return False
+            return NotImplemented
 
         return self.contents.lower() == other.contents.lower()
 
@@ -137,7 +137,7 @@ class URI(IA5String):
         """
 
         if not isinstance(other, URI):
-            return False
+            return NotImplemented
 
         return iri_to_uri(self.native) == iri_to_uri(other.native)
 
@@ -233,7 +233,7 @@ class EmailAddress(IA5String):
         """
 
         if not isinstance(other, EmailAddress):
-            return False
+            return NotImplemented
 
         if not self._normalized:
             self.set(self.native)
@@ -287,21 +287,17 @@ class IPAddress(OctetString):
 
         original_value = value
 
-        has_cidr = value.find('/') != -1
-        cidr = 0
-        if has_cidr:
-            parts = value.split('/', 1)
-            value = parts[0]
-            cidr = int(parts[1])
-            if cidr < 0:
-                raise ValueError(unwrap(
-                    '''
-                    %s value contains a CIDR range less than 0
-                    ''',
-                    type_name(self)
-                ))
+        value, has_cidr, cidr = value.partition('/')
+        cidr = int(cidr or 0)
+        if has_cidr and cidr < 0:
+            raise ValueError(unwrap(
+                '''
+                %s value contains a CIDR range less than 0
+                ''',
+                type_name(self)
+            ))
 
-        if value.find(':') != -1:
+        if ':' in value:
             family = socket.AF_INET6
             if cidr > 128:
                 raise ValueError(unwrap(
@@ -381,7 +377,7 @@ class IPAddress(OctetString):
         """
 
         if not isinstance(other, IPAddress):
-            return False
+            return NotImplemented
 
         return self.contents == other.contents
 
@@ -600,7 +596,7 @@ class NameTypeAndValue(Sequence):
         """
 
         if not isinstance(other, NameTypeAndValue):
-            return False
+            return NotImplemented
 
         if other['type'].native != self['type'].native:
             return False
@@ -750,7 +746,7 @@ class RelativeDistinguishedName(SetOf):
         """
 
         if not isinstance(other, RelativeDistinguishedName):
-            return False
+            return NotImplemented
 
         if len(self) != len(other):
             return False
@@ -831,7 +827,7 @@ class RDNSequence(SequenceOf):
         """
 
         if not isinstance(other, RDNSequence):
-            return False
+            return NotImplemented
 
         if len(self) != len(other):
             return False
@@ -934,7 +930,7 @@ class Name(Choice):
         """
 
         if not isinstance(other, Name):
-            return False
+            return NotImplemented
         return self.chosen == other.chosen
 
     @property
@@ -1305,6 +1301,9 @@ class GeneralName(Choice):
         :return:
             A boolean
         """
+
+        if not isinstance(other, GeneralName):
+            return NotImplemented
 
         if self.name in ('other_name', 'x400_address', 'edi_party_name'):
             raise ValueError(unwrap(
